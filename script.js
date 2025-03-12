@@ -1,14 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // Initialize PeerJS with secure configuration for HTTPS hosting (e.g., GitHub Pages)
-    const peer = new Peer(undefined, {
-      host: 'peerjs-server.herokuapp.com',
-      secure: true,
-      port: 443,
-      path: '/'
-    });
-  
-    let conn = null; // Will hold the connection between peers
-  
     // DOM elements
     const peerIdDisplay = document.getElementById("peer-id");
     const connectBtn = document.getElementById("connect-btn");
@@ -18,24 +8,35 @@ document.addEventListener("DOMContentLoaded", () => {
     const progressBar = document.getElementById("transfer-progress");
     const statusMsg = document.getElementById("status-message");
   
-    // Variables for file receiving
+    // Use the default PeerJS configuration
+    // (This will automatically use the default cloud server, which is configured for HTTPS.)
+    const peer = new Peer();
+  
+    // Error handling for PeerJS
+    peer.on('error', err => {
+      console.error("Peer error:", err);
+      peerIdDisplay.innerText = "Error: " + err;
+      statusMsg.innerText = "Peer error: " + err;
+    });
+  
+    let conn = null; // Will hold the connection between peers
     let receivedFileMeta = null;
     let receivedBuffers = [];
     let receivedSize = 0;
   
-    // When PeerJS connection is ready, display the generated Peer ID
+    // When the peer connection is open, display the assigned Peer ID
     peer.on('open', id => {
       peerIdDisplay.innerText = id;
       console.log("My Peer ID:", id);
     });
   
-    // Handle incoming connection from another peer
+    // Handle incoming connection requests from other peers
     peer.on('connection', connection => {
       conn = connection;
       setupConnection(conn);
     });
   
-    // Connect button event to connect to a specified Peer ID
+    // Connect to a peer when the "Connect" button is clicked
     connectBtn.addEventListener("click", () => {
       const targetId = connectIdInput.value.trim();
       if (!targetId) {
@@ -46,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setupConnection(conn);
     });
   
-    // Setup event listeners for a PeerJS connection
+    // Set up event listeners for the connection
     function setupConnection(connection) {
       connection.on('open', () => {
         console.log("Connected to peer:", connection.peer);
@@ -59,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
   
-    // Send file button event
+    // Send file when the "Send File" button is clicked
     sendBtn.addEventListener("click", () => {
       if (!conn || !conn.open) {
         alert("No connection established. Please connect to a peer first.");
@@ -73,13 +74,13 @@ document.addEventListener("DOMContentLoaded", () => {
       sendFile(file);
     });
   
-    // Function to send a file in chunks
+    // Function to send a file in 16KB chunks
     function sendFile(file) {
       const chunkSize = 16 * 1024; // 16 KB per chunk
       const totalChunks = Math.ceil(file.size / chunkSize);
       let currentChunk = 0;
   
-      // Send file metadata as a JSON header
+      // Send file metadata first
       const fileMeta = { fileName: file.name, fileSize: file.size, totalChunks: totalChunks };
       conn.send(JSON.stringify({ type: 'file-meta', data: fileMeta }));
   
@@ -112,13 +113,13 @@ document.addEventListener("DOMContentLoaded", () => {
         reader.readAsArrayBuffer(blob);
       }
   
-      // Start reading and sending the first chunk
+      // Start sending file chunks
       readNextChunk();
     }
   
     // Handle incoming data (both metadata and file chunks)
     function handleData(data) {
-      // Check if data is a string (assumed to be metadata)
+      // If data is a string, it should be file metadata
       if (typeof data === 'string') {
         try {
           const msg = JSON.parse(data);
@@ -134,7 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
           console.error("Error parsing received data:", err);
         }
       } else if (data instanceof ArrayBuffer) {
-        // Append the received binary chunk
+        // Accumulate file chunks
         receivedBuffers.push(data);
         receivedSize += data.byteLength;
         if (receivedFileMeta) {
@@ -142,7 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
           progressBar.value = progressPercent;
           statusMsg.innerText = `Receiving file: ${progressPercent}%`;
   
-          // Once the complete file is received, reconstruct and offer for download
+          // When file fully received, reconstruct it and provide a download link
           if (receivedSize >= receivedFileMeta.fileSize) {
             const blob = new Blob(receivedBuffers);
             const url = URL.createObjectURL(blob);
@@ -152,7 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
             a.textContent = `Download ${receivedFileMeta.fileName}`;
             statusMsg.innerHTML = "";
             statusMsg.appendChild(a);
-            // Reset the file receiving variables
+            // Reset receiving variables
             receivedFileMeta = null;
             receivedBuffers = [];
             receivedSize = 0;
