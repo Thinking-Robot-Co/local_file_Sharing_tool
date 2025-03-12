@@ -1,34 +1,45 @@
 <!DOCTYPE html>
-<html lang="en"> 
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LAN File Share</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="style.css">
+  <!-- Include PeerJS from a secure CDN -->
+  <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 </head>
 <body>
-  <header>
-    <h1>LAN File Share Tool</h1>
-  </header>
-
-  <main>
-    <!-- Connection Area -->
-    <section id="connection">
-      <p>Your Peer ID: <span id="peer-id">Loading...</span></p>
-      <input type="text" id="connect-id" placeholder="Enter Peer ID to connect">
-      <button id="connect-btn">Connect</button>
+  <div class="container">
+    <header>
+      <h1>LAN File Share Tool</h1>
+      <p class="subtitle">Simple, Fast &amp; Secure File Sharing Over LAN</p>
+    </header>
+    
+    <section id="connection-section" class="card">
+      <h2>Connection</h2>
+      <div class="info">
+        <label>Your Peer ID:</label>
+        <span id="peer-id">Loading...</span>
+      </div>
+      <div class="input-group">
+        <input type="text" id="connect-id" placeholder="Enter Peer ID to connect">
+        <button id="connect-btn">Connect</button>
+      </div>
     </section>
-
-    <!-- File Transfer Area -->
-    <section id="file-transfer">
-      <input type="file" id="file-input">
-      <button id="send-btn">Send File</button>
+    
+    <section id="file-transfer-section" class="card">
+      <h2>File Transfer</h2>
+      <div class="input-group">
+        <input type="file" id="file-input">
+        <button id="send-btn">Send File</button>
+      </div>
       <div id="progress-container">
         <progress id="transfer-progress" value="0" max="100"></progress>
       </div>
+      <div id="status-message"></div>
     </section>
-  </main>
-
+  </div>
+  
   <script src="script.js"></script>
 </body>
 </html>
